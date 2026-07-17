@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 物品估價</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI 物品估價</h1>
+      <p>上傳照片，AI 幫你辨識品牌、型號、年份並給出合理報價</p>
+    </header>
+
+    <main>
+      <!-- 上傳區域 -->
+      <div id="uploadSection">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📸</div>
+          <p class="upload-title">點擊或拖曳圖片到這裡</p>
+          <p class="upload-hint">支援 JPG、PNG、WEBP（最大 4MB）</p>
+          <input type="file" id="fileInput" accept="image/*" hidden>
+        </div>
+
+        <div class="preview-area" id="previewArea" style="display:none">
+          <img id="previewImg" src="" alt="預覽圖片">
+          <button class="btn-secondary" id="changeBtn">換張圖片</button>
+        </div>
+
+        <button class="btn-primary" id="analyzeBtn" style="display:none">
+          開始分析
+        </button>
+      </div>
+
+      <!-- 載入中 -->
+      <div class="loading" id="loading" style="display:none">
+        <div class="spinner"></div>
+        <p>AI 正在分析中，請稍候...</p>
+      </div>
+
+      <!-- 結果 -->
+      <div class="results" id="results" style="display:none">
+
+        <div class="product-header">
+          <h2 id="productName">-</h2>
+          <div class="tags">
+            <span class="tag tag-brand" id="brand">-</span>
+            <span class="tag tag-model" id="model">-</span>
+            <span class="tag tag-year" id="year">-</span>
+          </div>
+          <p class="product-desc" id="description">-</p>
+        </div>
+
+        <div class="price-grid">
+          <div class="price-card price-new">
+            <div class="price-label">全新價格</div>
+            <div class="price-value" id="newPrice">-</div>
+            <div class="price-note" id="newPriceNote">-</div>
+          </div>
+          <div class="price-card price-used">
+            <div class="price-label">二手價格</div>
+            <div class="price-value" id="usedPrice">-</div>
+            <div class="price-note" id="usedPriceNote">-</div>
+          </div>
+        </div>
+
+        <div class="confidence-row">
+          <span>辨識信心度：</span>
+          <span class="confidence-badge" id="confidence">-</span>
+        </div>
+
+        <!-- eBay 實際售價 -->
+        <div class="ebay-section" id="ebaySection" style="display:none">
+          <h3>eBay 實際售價參考</h3>
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="active">在售商品</button>
+            <button class="tab-btn" data-tab="sold">已成交</button>
+          </div>
+          <div class="tab-content" id="activeListings"></div>
+          <div class="tab-content" id="soldListings" style="display:none"></div>
+        </div>
+
+        <button class="btn-secondary" id="retryBtn">分析另一張圖片</button>
+      </div>
+
+      <!-- 錯誤 -->
+      <div class="error-box" id="errorBox" style="display:none">
+        <p id="errorMsg">發生錯誤</p>
+        <button class="btn-secondary" id="errorRetryBtn">重試</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

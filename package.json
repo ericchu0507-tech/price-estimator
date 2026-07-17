@@ -1,0 +1,11 @@
+{
+  "name": "price-estimator",
+  "version": "1.0.0",
+  "description": "AI-powered product price estimator",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
