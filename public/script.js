@@ -157,10 +157,32 @@ function showResults(data) {
   confEl.textContent = { high: '高', medium: '中', low: '低' }[conf] || conf;
   confEl.className = `confidence-badge confidence-${conf}`;
 
+  // 購買連結
+  showBuyLinks(p.searchKeywords || p.productName);
+
   // eBay 資料
   if (data.ebay) {
     showEbay(data.ebay);
   }
+}
+
+function showBuyLinks(keywords) {
+  if (!keywords) return;
+  const q = encodeURIComponent(keywords);
+  const platforms = [
+    { name: 'eBay',            emoji: '🛒', url: `https://www.ebay.com/sch/i.html?_nkw=${q}` },
+    { name: 'Amazon',          emoji: '📦', url: `https://www.amazon.com/s?k=${q}` },
+    { name: 'Google Shopping', emoji: '🔍', url: `https://www.google.com/search?q=${q}&tbm=shop` },
+  ];
+  const section = document.getElementById('buySection');
+  const container = document.getElementById('buyLinks');
+  container.innerHTML = platforms.map(p => `
+    <a class="buy-link" href="${p.url}" target="_blank" rel="noopener">
+      <span class="buy-emoji">${p.emoji}</span>
+      <span>${p.name}</span>
+    </a>
+  `).join('');
+  section.style.display = 'block';
 }
 
 function showEbay(ebay) {
