@@ -1,21 +1,35 @@
-const uploadArea   = document.getElementById('uploadArea');
-const fileInput    = document.getElementById('fileInput');
-const previewArea  = document.getElementById('previewArea');
-const previewImg   = document.getElementById('previewImg');
-const changeBtn    = document.getElementById('changeBtn');
-const analyzeBtn   = document.getElementById('analyzeBtn');
-const loading      = document.getElementById('loading');
-const results      = document.getElementById('results');
-const errorBox     = document.getElementById('errorBox');
-const retryBtn     = document.getElementById('retryBtn');
-const errorRetryBtn = document.getElementById('errorRetryBtn');
+const uploadArea      = document.getElementById('uploadArea');
+const fileInput       = document.getElementById('fileInput');
+const previewGrid     = document.getElementById('previewGrid');
+const previewList     = document.getElementById('previewList');
+const addPhotoBtn     = document.getElementById('addPhotoBtn');
+const addFileInput    = document.getElementById('addFileInput');
+const conditionSection = document.getElementById('conditionSection');
+const analyzeBtn      = document.getElementById('analyzeBtn');
+const loading         = document.getElementById('loading');
+const results         = document.getElementById('results');
+const errorBox        = document.getElementById('errorBox');
+const retryBtn        = document.getElementById('retryBtn');
+const shareBtn        = document.getElementById('shareBtn');
+const errorRetryBtn   = document.getElementById('errorRetryBtn');
 
-let selectedFile = null;
+let selectedFiles = [];
+let selectedCondition = 'new';
+let lastResult = null;
 
-// 點擊上傳區域
+// Condition buttons
+document.querySelectorAll('.condition-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.condition-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCondition = btn.dataset.value;
+  });
+});
+
+// Upload area click
 uploadArea.addEventListener('click', () => fileInput.click());
 
-// 拖曳上傳
+// Drag & drop
 uploadArea.addEventListener('dragover', e => {
   e.preventDefault();
   uploadArea.classList.add('drag-over');
@@ -24,83 +38,108 @@ uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag
 uploadArea.addEventListener('drop', e => {
   e.preventDefault();
   uploadArea.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) handleFile(file);
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
 });
 
-// 選擇檔案
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) handleFile(fileInput.files[0]);
-});
+fileInput.addEventListener('change', () => addFiles(Array.from(fileInput.files)));
+addFileInput.addEventListener('change', () => addFiles(Array.from(addFileInput.files)));
+addPhotoBtn.addEventListener('click', () => addFileInput.click());
 
-function handleFile(file) {
-  if (file.size > 4 * 1024 * 1024) {
-    alert('圖片太大了！請選擇 4MB 以下的圖片。');
-    return;
+function addFiles(files) {
+  for (const file of files) {
+    if (selectedFiles.length >= 3) break;
+    if (file.size > 4 * 1024 * 1024) {
+      alert(`"${file.name}" is too large. Max 4MB per image.`);
+      continue;
+    }
+    selectedFiles.push(file);
   }
-  selectedFile = file;
-  const url = URL.createObjectURL(file);
-  previewImg.src = url;
+  if (selectedFiles.length > 0) renderPreviews();
+}
+
+function renderPreviews() {
   uploadArea.style.display = 'none';
-  previewArea.style.display = 'block';
+  previewGrid.style.display = 'block';
+  conditionSection.style.display = 'block';
   analyzeBtn.style.display = 'block';
   results.style.display = 'none';
   errorBox.style.display = 'none';
+
+  previewList.innerHTML = selectedFiles.map((file, i) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="preview-item">
+        <img src="${url}" alt="Photo ${i + 1}">
+        <button class="remove-btn" data-index="${i}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  // Remove button handlers
+  previewList.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(parseInt(btn.dataset.index), 1);
+      if (selectedFiles.length === 0) resetToUpload();
+      else renderPreviews();
+    });
+  });
+
+  addPhotoBtn.style.display = selectedFiles.length < 3 ? 'block' : 'none';
 }
 
-// 換張圖片
-changeBtn.addEventListener('click', resetToUpload);
-retryBtn.addEventListener('click', resetToUpload);
+changeBtn: retryBtn.addEventListener('click', resetToUpload);
 errorRetryBtn.addEventListener('click', resetToUpload);
 
 function resetToUpload() {
-  selectedFile = null;
+  selectedFiles = [];
   fileInput.value = '';
+  addFileInput.value = '';
   uploadArea.style.display = 'block';
-  previewArea.style.display = 'none';
+  previewGrid.style.display = 'none';
+  conditionSection.style.display = 'none';
   analyzeBtn.style.display = 'none';
   results.style.display = 'none';
   errorBox.style.display = 'none';
   loading.style.display = 'none';
+  lastResult = null;
 }
 
-// 開始分析
+// Analyze
 analyzeBtn.addEventListener('click', analyze);
 
 async function analyze() {
-  if (!selectedFile) return;
+  if (selectedFiles.length === 0) return;
 
-  previewArea.style.display = 'none';
+  previewGrid.style.display = 'none';
+  conditionSection.style.display = 'none';
   analyzeBtn.style.display = 'none';
   loading.style.display = 'block';
   results.style.display = 'none';
   errorBox.style.display = 'none';
 
   try {
-    // 將圖片壓縮並轉成 base64
-    const base64 = await compressAndEncode(selectedFile);
+    // Compress all images to base64
+    const encoded = await Promise.all(selectedFiles.map(f => compressAndEncode(f)));
+    const mimeTypes = selectedFiles.map(f => f.type);
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image: base64,
-        mimeType: selectedFile.type
-      })
+      body: JSON.stringify({ images: encoded, mimeTypes, condition: selectedCondition })
     });
 
     const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.error || '分析失敗');
+    if (!response.ok || !data.success) throw new Error(data.error || 'Analysis failed');
 
+    lastResult = data;
     showResults(data);
   } catch (err) {
     loading.style.display = 'none';
     errorBox.style.display = 'block';
-    document.getElementById('errorMsg').textContent = `錯誤：${err.message}`;
+    document.getElementById('errorMsg').textContent = `Error: ${err.message}`;
   }
 }
 
-// 壓縮圖片並轉成 base64（不含 data: 前綴）
 function compressAndEncode(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -117,8 +156,7 @@ function compressAndEncode(file) {
       canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      resolve(dataUrl.split(',')[1]); // 去掉 "data:image/jpeg;base64,"
+      resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
     };
     img.onerror = reject;
     img.src = url;
@@ -131,40 +169,55 @@ function showResults(data) {
 
   const p = data.product;
 
-  document.getElementById('productName').textContent = p.productName || '未知物品';
-  document.getElementById('brand').textContent = `品牌：${p.brand || '未知'}`;
-  document.getElementById('model').textContent = `型號：${p.model || '未知'}`;
-  document.getElementById('year').textContent = `年份：${p.estimatedYear || '未知'}`;
+  document.getElementById('productName').textContent = p.productName || 'Unknown Item';
+  document.getElementById('brand').textContent = `Brand: ${p.brand || 'Unknown'}`;
+  document.getElementById('model').textContent = `Model: ${p.model || 'Unknown'}`;
+  document.getElementById('year').textContent  = `Year: ${p.estimatedYear || 'Unknown'}`;
   document.getElementById('description').textContent = p.description || '';
 
-  // 全新價格
   const np = p.newPrice;
   if (np && np.min != null) {
     document.getElementById('newPrice').textContent = `$${np.min} – $${np.max} ${np.currency}`;
     document.getElementById('newPriceNote').textContent = np.note || '';
   }
 
-  // 二手價格
   const up = p.usedPrice;
   if (up && up.min != null) {
     document.getElementById('usedPrice').textContent = `$${up.min} – $${up.max} ${up.currency}`;
     document.getElementById('usedPriceNote').textContent = up.note || '';
   }
 
-  // 信心度
   const conf = (p.confidence || '').toLowerCase();
   const confEl = document.getElementById('confidence');
-  confEl.textContent = { high: '高', medium: '中', low: '低' }[conf] || conf;
+  confEl.textContent = { high: 'High', medium: 'Medium', low: 'Low' }[conf] || conf;
   confEl.className = `confidence-badge confidence-${conf}`;
 
-  // 購買連結
+  // Market trend
+  if (p.marketTrend) {
+    document.getElementById('trendText').textContent = p.marketTrend;
+    document.getElementById('trendSection').style.display = 'block';
+  }
+
   showBuyLinks(p.searchKeywords || p.productName);
 
-  // eBay 資料
-  if (data.ebay) {
-    showEbay(data.ebay);
-  }
+  if (data.ebay) showEbay(data.ebay);
 }
+
+// Share button
+shareBtn.addEventListener('click', () => {
+  if (!lastResult) return;
+  const p = lastResult.product;
+  const text = `AI Price Estimate for ${p.productName}\nBrand: ${p.brand} | Year: ${p.estimatedYear}\nNew: $${p.newPrice?.min}–$${p.newPrice?.max} USD\nUsed: $${p.usedPrice?.min}–$${p.usedPrice?.max} USD`;
+
+  if (navigator.share) {
+    navigator.share({ title: 'AI Price Estimate', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      shareBtn.textContent = 'Copied!';
+      setTimeout(() => { shareBtn.textContent = 'Share Results'; }, 2000);
+    });
+  }
+});
 
 function showBuyLinks(keywords) {
   if (!keywords) return;
@@ -188,16 +241,13 @@ function showBuyLinks(keywords) {
 function showEbay(ebay) {
   const section = document.getElementById('ebaySection');
   const activeEl = document.getElementById('activeListings');
-  const soldEl = document.getElementById('soldListings');
+  const soldEl   = document.getElementById('soldListings');
 
   activeEl.innerHTML = renderEbayItems(ebay.active);
-  soldEl.innerHTML = renderEbayItems(ebay.sold);
+  soldEl.innerHTML   = renderEbayItems(ebay.sold);
 
-  if (ebay.active.length > 0 || ebay.sold.length > 0) {
-    section.style.display = 'block';
-  }
+  if (ebay.active.length > 0 || ebay.sold.length > 0) section.style.display = 'block';
 
-  // Tab 切換
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -210,12 +260,12 @@ function showEbay(ebay) {
 }
 
 function renderEbayItems(items) {
-  if (!items || items.length === 0) return '<p style="color:#888;font-size:0.88rem">暫無資料</p>';
+  if (!items || items.length === 0) return '<p style="color:#888;font-size:0.88rem">No data available</p>';
   return items.map(item => `
     <div class="ebay-item">
       <span class="ebay-title">${escapeHtml(item.title)}</span>
       <span class="ebay-price">$${item.price.toFixed(2)}</span>
-      <a class="ebay-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">查看</a>
+      <a class="ebay-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">View</a>
     </div>
   `).join('');
 }

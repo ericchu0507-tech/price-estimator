@@ -68,20 +68,132 @@ header p {
   color: #888;
 }
 
-/* Preview */
-.preview-area {
-  text-align: center;
+/* Multiple image previews */
+.preview-grid {
   background: #fff;
   border-radius: 16px;
   padding: 20px;
 }
 
-.preview-area img {
-  max-width: 100%;
-  max-height: 320px;
-  border-radius: 10px;
-  object-fit: contain;
+.preview-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 14px;
+}
+
+.preview-item {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-photo-btn {
+  padding: 8px 16px;
+  background: #f0f3ff;
+  color: #4f6ef7;
+  border: 1px dashed #4f6ef7;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-photo-btn:hover { background: #e0e6ff; }
+
+/* Condition Selector */
+.condition-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-top: 12px;
+}
+
+.condition-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.condition-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.condition-btn {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #c5cde6;
+  background: #f5f7fa;
+  color: #555;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.condition-btn.active {
+  background: #4f6ef7;
+  border-color: #4f6ef7;
+  color: #fff;
+}
+
+/* Market Trend */
+.trend-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border-left: 4px solid #f59e0b;
+}
+
+.trend-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #92400e;
+}
+
+.trend-text {
+  font-size: 0.92rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Result actions */
+.result-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* Buttons */

@@ -7,20 +7,27 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { image, mimeType } = req.body;
-    if (!image) return res.status(400).json({ error: 'No image provided' });
+    const { images, mimeTypes, condition, image, mimeType } = req.body;
 
-    // Step 1: 用 Gemini 辨識物品並估價
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    // Support both single image (legacy) and multiple images
+    const imageList = images || (image ? [image] : []);
+    const mimeList  = mimeTypes || (mimeType ? [mimeType] : []);
+
+    if (imageList.length === 0) return res.status(400).json({ error: 'No image provided' });
+
+    const conditionLabel = {
+      new: 'Brand New',
+      like_new: 'Like New',
+      good: 'Good',
+      fair: 'Fair',
+      poor: 'Poor'
+    }[condition] || 'Unknown';
+
+    // Build parts: prompt text + all images
+    const parts = [
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: `You are a professional product appraiser. Analyze this image carefully.
+        text: `You are a professional product appraiser. Analyze the provided image(s) carefully.
+Item condition reported by user: ${conditionLabel}.
 
 Return ONLY a valid JSON object with no markdown formatting:
 {
@@ -39,21 +46,30 @@ Return ONLY a valid JSON object with no markdown formatting:
     "min": 0,
     "max": 0,
     "currency": "USD",
-    "note": "brief reason for this estimate"
+    "note": "brief reason based on the reported condition"
   },
   "searchKeywords": "3-5 keywords suitable for eBay search",
   "confidence": "high or medium or low",
-  "description": "2-3 sentence product description"
+  "description": "2-3 sentence product description",
+  "marketTrend": "1-2 sentences about current demand and whether prices are rising, stable, or falling for this item"
 }`
-              },
-              {
-                inline_data: {
-                  mime_type: mimeType || 'image/jpeg',
-                  data: image
-                }
-              }
-            ]
-          }],
+      },
+      ...imageList.map((img, i) => ({
+        inline_data: {
+          mime_type: mimeList[i] || 'image/jpeg',
+          data: img
+        }
+      }))
+    ];
+
+    // Step 1: Gemini vision analysis
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 1024

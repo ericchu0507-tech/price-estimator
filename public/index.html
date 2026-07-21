@@ -1,45 +1,59 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI 物品估價</title>
+  <title>AI Price Estimator</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>AI 物品估價</h1>
-      <p>上傳照片，AI 幫你辨識品牌、型號、年份並給出合理報價</p>
+      <h1>AI Price Estimator</h1>
+      <p>Upload a photo — AI identifies the item, brand, year, and gives you a fair price estimate</p>
     </header>
 
     <main>
-      <!-- 上傳區域 -->
+      <!-- Upload -->
       <div id="uploadSection">
         <div class="upload-area" id="uploadArea">
           <div class="upload-icon">📸</div>
-          <p class="upload-title">點擊或拖曳圖片到這裡</p>
-          <p class="upload-hint">支援 JPG、PNG、WEBP（最大 4MB）</p>
-          <input type="file" id="fileInput" accept="image/*" hidden>
+          <p class="upload-title">Click or drag images here</p>
+          <p class="upload-hint">Up to 3 photos · JPG, PNG, WEBP · Max 4MB each</p>
+          <input type="file" id="fileInput" accept="image/*" multiple hidden>
         </div>
 
-        <div class="preview-area" id="previewArea" style="display:none">
-          <img id="previewImg" src="" alt="預覽圖片">
-          <button class="btn-secondary" id="changeBtn">換張圖片</button>
+        <!-- Multiple image previews -->
+        <div class="preview-grid" id="previewGrid" style="display:none">
+          <div class="preview-list" id="previewList"></div>
+          <button class="add-photo-btn" id="addPhotoBtn" style="display:none">+ Add Photo</button>
+          <input type="file" id="addFileInput" accept="image/*" hidden>
+        </div>
+
+        <!-- Condition selector -->
+        <div class="condition-section" id="conditionSection" style="display:none">
+          <p class="condition-label">Item Condition</p>
+          <div class="condition-buttons">
+            <button class="condition-btn active" data-value="new">New</button>
+            <button class="condition-btn" data-value="like_new">Like New</button>
+            <button class="condition-btn" data-value="good">Good</button>
+            <button class="condition-btn" data-value="fair">Fair</button>
+            <button class="condition-btn" data-value="poor">Poor</button>
+          </div>
         </div>
 
         <button class="btn-primary" id="analyzeBtn" style="display:none">
-          開始分析
+          Analyze
         </button>
       </div>
 
-      <!-- 載入中 -->
+      <!-- Loading -->
       <div class="loading" id="loading" style="display:none">
         <div class="spinner"></div>
-        <p>AI 正在分析中，請稍候...</p>
+        <p>AI is analyzing your image...</p>
       </div>
 
-      <!-- 結果 -->
+      <!-- Results -->
       <div class="results" id="results" style="display:none">
 
         <div class="product-header">
@@ -54,46 +68,55 @@
 
         <div class="price-grid">
           <div class="price-card price-new">
-            <div class="price-label">全新價格</div>
+            <div class="price-label">New Price</div>
             <div class="price-value" id="newPrice">-</div>
             <div class="price-note" id="newPriceNote">-</div>
           </div>
           <div class="price-card price-used">
-            <div class="price-label">二手價格</div>
+            <div class="price-label">Used Price</div>
             <div class="price-value" id="usedPrice">-</div>
             <div class="price-note" id="usedPriceNote">-</div>
           </div>
         </div>
 
         <div class="confidence-row">
-          <span>辨識信心度：</span>
+          <span>Confidence:</span>
           <span class="confidence-badge" id="confidence">-</span>
         </div>
 
-        <!-- 哪裡可以買 -->
+        <!-- Market Trend -->
+        <div class="trend-section" id="trendSection" style="display:none">
+          <h3>Market Trend</h3>
+          <p class="trend-text" id="trendText">-</p>
+        </div>
+
+        <!-- Where to buy -->
         <div class="buy-section" id="buySection" style="display:none">
-          <h3>哪裡可以買到？</h3>
+          <h3>Where to Buy</h3>
           <div class="buy-links" id="buyLinks"></div>
         </div>
 
-        <!-- eBay 實際售價 -->
+        <!-- eBay listings -->
         <div class="ebay-section" id="ebaySection" style="display:none">
-          <h3>eBay 實際售價參考</h3>
+          <h3>eBay Market Prices</h3>
           <div class="tab-bar">
-            <button class="tab-btn active" data-tab="active">在售商品</button>
-            <button class="tab-btn" data-tab="sold">已成交</button>
+            <button class="tab-btn active" data-tab="active">Active Listings</button>
+            <button class="tab-btn" data-tab="sold">Sold</button>
           </div>
           <div class="tab-content" id="activeListings"></div>
           <div class="tab-content" id="soldListings" style="display:none"></div>
         </div>
 
-        <button class="btn-secondary" id="retryBtn">分析另一張圖片</button>
+        <div class="result-actions">
+          <button class="btn-secondary" id="shareBtn">Share Results</button>
+          <button class="btn-secondary" id="retryBtn">Analyze Another</button>
+        </div>
       </div>
 
-      <!-- 錯誤 -->
+      <!-- Error -->
       <div class="error-box" id="errorBox" style="display:none">
-        <p id="errorMsg">發生錯誤</p>
-        <button class="btn-secondary" id="errorRetryBtn">重試</button>
+        <p id="errorMsg">An error occurred</p>
+        <button class="btn-secondary" id="errorRetryBtn">Try Again</button>
       </div>
     </main>
   </div>
